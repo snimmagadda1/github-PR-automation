@@ -12,7 +12,7 @@ import (
 	"github.com/bradleyfalzon/ghinstallation"
 	v3 "github.com/google/go-github/v35/github"
 	"github.com/joho/godotenv"
-	ghwebhooks "gopkg.in/go-playground/webhooks.v5/GitHub"
+	ghwebhooks "gopkg.in/go-playground/webhooks.v5/github"
 )
 
 // Env based config for now
@@ -67,7 +67,7 @@ func processReleaseEvent(p *ghwebhooks.PushPayload) {
 				log.Printf("created pull request: %s", pr.GetURL())
 			}
 		} else {
-			log.Printf("received push event for unmonitored repo: %s", branch)
+			log.Printf("parsed push - unmonitored repo: %s", branch)
 		}
 	}
 }
