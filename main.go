@@ -34,7 +34,7 @@ func GetV3Client() *v3.Client {
 	if useEnterprise {
 		client, err := v3.NewEnterpriseClient(GitHubEnterpriseURL, GitHubEnterpriseUploadURL, &http.Client{Transport: itr})
 		if err != nil {
-			log.Fatalf("failed to generate a client", err)
+			log.Fatal("failed to generate a client", err)
 		}
 		return client
 	} else {
@@ -53,10 +53,10 @@ func processReleaseEvent(p *ghwebhooks.PushPayload) {
 	if isRelease {
 		if branch := p.Repository.Name; contains(repos, branch) {
 			pr, _, err := GetV3Client().PullRequests.Create(context.TODO(), orgID, branch, &v3.NewPullRequest{
-				Title:               v3.String("Hello pull request!"),
+				Title:               v3.String("Merge " + releaseBranch),
 				Head:                v3.String(strings.ToLower(releaseBranch)),
 				Base:                v3.String("master"),
-				Body:                v3.String("This is an automatically created PR from the go bot."),
+				Body:                v3.String("This is an automatically created PR 🚀"),
 				MaintainerCanModify: v3.Bool(true),
 			})
 			if err != nil {
@@ -140,14 +140,14 @@ func main() {
 
 	atr, err := ghinstallation.NewAppsTransportKeyFromFile(http.DefaultTransport, appID, certPath)
 	if err != nil {
-		log.Fatal("error creating GitHub app client")
+		log.Fatal("error creating GitHub app client", err)
 	}
 
 	var client *v3.Client
 	if useEnterprise {
 		client, err = v3.NewEnterpriseClient(GitHubEnterpriseURL, GitHubEnterpriseUploadURL, &http.Client{Transport: atr})
 		if err != nil {
-			log.Fatalf("failed to init client", err)
+			log.Fatal("failed to init client", err)
 		}
 	} else {
 		client = v3.NewClient(&http.Client{Transport: itr})
