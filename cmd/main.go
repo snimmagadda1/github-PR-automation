@@ -12,6 +12,7 @@ import (
 	"github.com/bradleyfalzon/ghinstallation"
 	v3 "github.com/google/go-github/v35/github"
 	"github.com/joho/godotenv"
+	"github.com/snimmagadda1/github-PR-automation/pkg/utils"
 	ghwebhooks "gopkg.in/go-playground/webhooks.v5/github"
 )
 
@@ -48,16 +49,10 @@ func GetV3Client(installationID int) *v3.Client {
 	}
 }
 
-func contains(s []string, searchterm string) bool {
-	i := sort.SearchStrings(s, searchterm)
-	contains := i < len(s) && s[i] == searchterm
-	return contains
-}
-
 func processReleaseEvent(p *ghwebhooks.PushPayload) {
 	isRelease := strings.Contains(strings.ToLower(p.Ref), strings.ToLower(releaseBranch))
 	if isRelease {
-		if branch := p.Repository.Name; contains(repos, branch) {
+		if branch := p.Repository.Name; utils.Contains(repos, branch) {
 			pr, _, err := GetV3Client(p.Installation.ID).PullRequests.Create(context.TODO(), owner, branch, &v3.NewPullRequest{
 				Title:               v3.String("Merge " + releaseBranch),
 				Head:                v3.String(strings.ToLower(releaseBranch)),
@@ -109,12 +104,6 @@ func Handle(response http.ResponseWriter, request *http.Request) {
 	response.WriteHeader(http.StatusOK)
 }
 
-func getEnvAsSlice(in string, sep string) []string {
-	val := strings.Split(in, sep)
-
-	return val
-}
-
 func init() {
 	// loads values from .env into the system
 	if err := godotenv.Load(); err != nil {
@@ -138,7 +127,7 @@ func init() {
 	certPath = os.Getenv("CERT_PATH")
 	releaseBranch = os.Getenv("RELEASE_BRANCH")
 	masterBranch = os.Getenv("MASTER_BRANCH")
-	repos = getEnvAsSlice(os.Getenv("REPOS"), ",")
+	repos = utils.GetEnvAsSlice(os.Getenv("REPOS"), ",")
 	sort.Strings(repos)
 	log.Printf("Initialized environment with appId: %d, owner: %s, certPath: %s, enterpriseUrl: %s, enterpriseUploadUrl: %s, releaseBranch: %s, repos: %v", appID, owner, certPath, GitHubEnterpriseURL, GitHubEnterpriseUploadURL, releaseBranch, repos)
 }
