@@ -19,18 +19,19 @@ import (
 var (
 	webhookSecret             = "development"
 	appID                     int64
-	orgID                     string
+	owner                     string
 	useEnterprise             bool
 	GitHubEnterpriseURL       string
 	GitHubEnterpriseUploadURL string
 	certPath                  string
+	masterBranch              string
 	releaseBranch             string
 	repos                     []string // might be better as map
 	installationID            int64
 	itr                       *ghinstallation.Transport
 )
 
-func GetV3Client() *v3.Client {
+func GetV3Client(installationID int) *v3.Client {
 	if useEnterprise {
 		client, err := v3.NewEnterpriseClient(GitHubEnterpriseURL, GitHubEnterpriseUploadURL, &http.Client{Transport: itr})
 		if err != nil {
@@ -38,6 +39,11 @@ func GetV3Client() *v3.Client {
 		}
 		return client
 	} else {
+		// Non-enterprise must authenticate as installation individually
+		itr, err := ghinstallation.NewKeyFromFile(http.DefaultTransport, appID, int64(installationID), certPath)
+		if err != nil {
+			log.Fatal("failed to generate a client", err)
+		}
 		return v3.NewClient(&http.Client{Transport: itr})
 	}
 }
@@ -52,10 +58,10 @@ func processReleaseEvent(p *ghwebhooks.PushPayload) {
 	isRelease := strings.Contains(strings.ToLower(p.Ref), strings.ToLower(releaseBranch))
 	if isRelease {
 		if branch := p.Repository.Name; contains(repos, branch) {
-			pr, _, err := GetV3Client().PullRequests.Create(context.TODO(), orgID, branch, &v3.NewPullRequest{
+			pr, _, err := GetV3Client(p.Installation.ID).PullRequests.Create(context.TODO(), owner, branch, &v3.NewPullRequest{
 				Title:               v3.String("Merge " + releaseBranch),
 				Head:                v3.String(strings.ToLower(releaseBranch)),
-				Base:                v3.String("master"),
+				Base:                v3.String(masterBranch),
 				Body:                v3.String("This is an automatically created PR 🚀"),
 				MaintainerCanModify: v3.Bool(true),
 			})
@@ -122,49 +128,50 @@ func init() {
 		log.Fatalf("Could not parse appId: %v", err)
 	}
 
-	orgID = os.Getenv("ORG_ID")
+	owner = os.Getenv("OWNER")
 	GitHubEnterpriseURL = os.Getenv("GITHUB_ENTERPRISE_URL")
+	useEnterprise = false
 	if GitHubEnterpriseURL != "" {
 		useEnterprise = true
 	}
-
 	GitHubEnterpriseUploadURL = os.Getenv("GITHUB_ENTERPRISE_UPLOAD_URL")
 	certPath = os.Getenv("CERT_PATH")
 	releaseBranch = os.Getenv("RELEASE_BRANCH")
+	masterBranch = os.Getenv("MASTER_BRANCH")
 	repos = getEnvAsSlice(os.Getenv("REPOS"), ",")
 	sort.Strings(repos)
-	log.Printf("Initialized environment with appId: %d, orgId: %s, certPath: %s, enterpriseUrl: %s, enterpriseUploadUrl: %s, releaseBranch: %s, repos: %v", appID, orgID, certPath, GitHubEnterpriseURL, GitHubEnterpriseUploadURL, releaseBranch, repos)
+	log.Printf("Initialized environment with appId: %d, owner: %s, certPath: %s, enterpriseUrl: %s, enterpriseUploadUrl: %s, releaseBranch: %s, repos: %v", appID, owner, certPath, GitHubEnterpriseURL, GitHubEnterpriseUploadURL, releaseBranch, repos)
 }
 
 func main() {
 
+	// Create an app transport (semi-authenticated)
 	atr, err := ghinstallation.NewAppsTransportKeyFromFile(http.DefaultTransport, appID, certPath)
 	if err != nil {
 		log.Fatal("error creating GitHub app client", err)
 	}
 
-	var client *v3.Client
+	// If enterprise, we can authenticate globally as org and be done
 	if useEnterprise {
-		client, err = v3.NewEnterpriseClient(GitHubEnterpriseURL, GitHubEnterpriseUploadURL, &http.Client{Transport: atr})
+		client, err := v3.NewEnterpriseClient(GitHubEnterpriseURL, GitHubEnterpriseUploadURL, &http.Client{Transport: atr})
 		if err != nil {
 			log.Fatal("failed to init client", err)
 		}
-	} else {
-		client = v3.NewClient(&http.Client{Transport: itr})
+
+		// Extra step for org install (owner=orgId if using enterprise)
+		installation, _, err := client.Apps.FindOrganizationInstallation(context.TODO(), owner)
+		if err != nil {
+			log.Fatalf("error finding organization installation: %v", err)
+		}
+
+		installationID = installation.GetID()
+		itr = ghinstallation.NewFromAppsTransport(atr, installationID)
+		itr.BaseURL = GitHubEnterpriseURL
+		log.Printf("successfully initialized enterprise GitHub app client url:%s, installation-id:%d expected-events:%v\n", itr.BaseURL, installationID, installation.Events)
 	}
-
-	installation, _, err := client.Apps.FindOrganizationInstallation(context.TODO(), orgID)
-	if err != nil {
-		log.Fatalf("error finding organization installation: %v", err)
-	}
-
-	installationID = installation.GetID()
-	itr = ghinstallation.NewFromAppsTransport(atr, installationID)
-	itr.BaseURL = GitHubEnterpriseURL
-
-	log.Printf("successfully initialized GitHub app client url:%s, installation-id:%d expected-events:%v\n", itr.BaseURL, installationID, installation.Events)
 
 	http.HandleFunc("/", Handle)
+	log.Print("Ready to handle github events")
 	err = http.ListenAndServe("0.0.0.0:3000", nil)
 	if err != nil && err != http.ErrServerClosed {
 		log.Fatal(err)
