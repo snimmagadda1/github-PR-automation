@@ -32,7 +32,7 @@ var (
 	s                         *client.GithubService
 )
 
-func processReleaseEvent(p *ghwebhooks.PushPayload) {
+func processEvent(p *ghwebhooks.PushPayload) {
 	isRelease := strings.Contains(strings.ToLower(p.Ref), strings.ToLower(releaseBranch))
 	if isRelease {
 		if repo := p.Repository.Name; utils.Contains(repos, repo) {
@@ -88,7 +88,7 @@ func Handle(response http.ResponseWriter, request *http.Request) {
 	case ghwebhooks.PushPayload:
 		log.Println("received push event")
 		// handle async b/c github wants speedy replies
-		go processReleaseEvent(&payload)
+		go processEvent(&payload)
 	default:
 		log.Println("missing handler")
 		log.Printf("receieved release payload of type %v", payload)
