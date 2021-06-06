@@ -18,5 +18,6 @@ RUN set -x && go version
 RUN mkdir /app
 ADD . /app
 WORKDIR /app
+RUN mkdir keys
 RUN go build -o main cmd/main.go
 CMD ["/app/main"]
