@@ -1,4 +1,4 @@
-# Welcome to github-PR-bot 👋
+# Welcome to github-PR-automation 👋
 
 ![Version](https://img.shields.io/badge/version-0.0.1-blue.svg?cacheSeconds=2592000)
 [![Build Status](https://travis-ci.com/snimmagadda1/github-PR-automation.svg?branch=master)](https://travis-ci.com/snimmagadda1/github-PR-automation)
