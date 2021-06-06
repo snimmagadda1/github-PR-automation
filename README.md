@@ -39,6 +39,8 @@ kubectl create -f deploy/k8s.yaml
 
 [Smee.io](https://smee.io/) is recommended for forwarding events from Github to your local machine. Simply start a channel and change the webhook URL to your channel's URL. 
 
+![Webhook forwarding](webhook.png)
+
 To run the bot from source, create a `.env` file in the project root and set the required env vars. The project can then be run:
 
 ```go
