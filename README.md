@@ -87,6 +87,7 @@ func Handle(response http.ResponseWriter, request *http.Request) {
 * [google-go](https://github.com/google/go-github)
 * [ghinstallation](https://github.com/bradleyfalzon/ghinstallation)
 * [metal-robot](https://github.com/metal-stack/metal-robot)
+* [godotenv](https://github.com/joho/godotenv)
 
 ## Author
 
