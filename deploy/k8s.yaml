@@ -1,0 +1,67 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: go-bot
+  labels:
+    app: go-bot
+    component: go=bot
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: go-bot
+  strategy:
+    rollingUpdate:
+      maxSurge: "100%"
+      maxUnavailable: 0
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: go-bot
+    spec:
+      containers:
+      - name: go-bot
+        image: snimmagadda/github-pr-bot
+        env:
+        - name: APP_ID
+          value: 1234
+        - name: CERT_PATH
+          value: /temp/bot.pem
+        - name: OWNER
+          value: test
+        # - name: GITHUB_ENTERPRISE_URL
+        #   value: test
+        # - name: GITHUB_ENTERPRISE_UPLOAD_URL
+        #   value: test
+        - name: MASTER_BRANCH
+          value: main
+        - name: RELEASE_BRANCH
+          value: release-1.1.0
+        - name: REPOS
+          value: my-api1,my-api2,my-ui1
+        ports:
+        - containerPort: 3000
+          protocol: TCP
+        volumeMonts:
+        - name: github-rsa-keypair
+          secret:
+            secretName: github-rsa-keypari
+            items:
+              - key: private-key
+                path: github-private-key.pem
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: go-bot
+  name: go-bot-svc
+spec:
+  ports:
+  - name: tcp-3000
+    port: 3000
+    protocol: TCP
+    targetPort: 3000
+  selector:
+    app: go-bot
