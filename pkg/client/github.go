@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"errors"
 	"log"
 	"net/http"
 
@@ -78,4 +79,30 @@ func (s *GithubService) GetV3Client(installationID int) *v3.Client {
 		}
 		return v3.NewClient(&http.Client{Transport: itr})
 	}
+}
+
+// GetRef returns the commit branch reference object if it exists or creates it
+// from the base branch before returning it. From https://github.com/google/go-github/blob/master/example/commitpr/main.go
+func (s *GithubService) GetRef(installationID int, repo string, baseBranch string, commitBranch string) (ref *v3.Reference, err error) {
+	if ref, _, err = s.GetV3Client(installationID).Git.GetRef(context.TODO(), s.client.Owner, repo, "refs/heads/"+commitBranch); err == nil {
+		return ref, nil
+	}
+
+	// We consider that an error means the branch has not been found and needs to
+	// be created.
+	if commitBranch == baseBranch {
+		return nil, errors.New("The commit branch does not exist but `-base-branch` is the same as `-commit-branch`")
+	}
+
+	if baseBranch == "" {
+		return nil, errors.New("The `-base-branch` should not be set to an empty string when the branch specified by `-commit-branch` does not exists")
+	}
+
+	var baseRef *v3.Reference
+	if baseRef, _, err = s.GetV3Client(installationID).Git.GetRef(context.TODO(), s.client.Owner, repo, "refs/heads/"+baseBranch); err != nil {
+		return nil, err
+	}
+	newRef := &v3.Reference{Ref: v3.String("refs/heads/" + commitBranch), Object: &v3.GitObject{SHA: baseRef.Object.SHA}}
+	ref, _, err = s.GetV3Client(installationID).Git.CreateRef(context.TODO(), s.client.Owner, repo, newRef)
+	return ref, err
 }

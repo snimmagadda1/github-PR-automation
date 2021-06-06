@@ -29,7 +29,6 @@ var (
 	masterBranch              string
 	releaseBranch             string
 	repos                     []string // might be better as map
-	installationID            int64
 	s                         *client.GithubService
 )
 
@@ -37,9 +36,21 @@ func processReleaseEvent(p *ghwebhooks.PushPayload) {
 	isRelease := strings.Contains(strings.ToLower(p.Ref), strings.ToLower(releaseBranch))
 	if isRelease {
 		if branch := p.Repository.Name; utils.Contains(repos, branch) {
+
+			// Check out new branch of main
+			mergeBranch := "merge-" + releaseBranch
+			ref, err := s.GetRef(p.Installation.ID, branch, releaseBranch, mergeBranch)
+			if err != nil {
+				log.Fatalf("Unable to get/create the commit reference: %s\n", err)
+			}
+			if ref == nil {
+				log.Fatalf("No error where returned but the reference is nil")
+			}
+
+			// Create PR on new branch
 			pr, _, err := s.GetV3Client(p.Installation.ID).PullRequests.Create(context.TODO(), owner, branch, &v3.NewPullRequest{
 				Title:               v3.String("Merge " + releaseBranch),
-				Head:                v3.String(strings.ToLower(releaseBranch)),
+				Head:                v3.String(strings.ToLower(mergeBranch)),
 				Base:                v3.String(masterBranch),
 				Body:                v3.String("This is an automatically created PR 🚀"),
 				MaintainerCanModify: v3.Bool(true),
