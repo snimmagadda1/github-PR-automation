@@ -46,13 +46,13 @@ spec:
         volumeMounts:
         - name: github-rsa-keypair
           mountPath: /app/keys
-        volumes:
-        - name: github-rsa-keypair
-          secret:
-            secretName: github-rsa-keypari
-            items:
-              - key: private-key
-                path: github-private-key.pem
+      volumes:
+      - name: github-rsa-keypair
+        secret:
+          secretName: github-rsa-keypair
+          items:
+            - key: private-key
+              path: github-private-key.pem
 ---
 apiVersion: v1
 kind: Service
