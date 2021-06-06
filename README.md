@@ -4,7 +4,7 @@
 [![Build Status](https://travis-ci.com/snimmagadda1/github-PR-automation.svg?branch=master)](https://travis-ci.com/snimmagadda1/github-PR-automation)
 [![Go Report](https://goreportcard.com/badge/github.com/snimmagadda1/stack-exchange-graphql-server)](https://goreportcard.com/report/github.com/snimmagadda1/github-PR-automation)
 
-> A minimal, performant bot to respond to github events to make life easier
+> A minimal, performant bot responding to github events to make life easier
 
 Built with Github Apps & Golang, the bot monitors an entire organization or list of repositories to keep branches in-sync automatically. This is especially useful when handling multiple repositories with individual release branches (i.e microservices). When changes are pushed to release branches (i.e bug/hotfixes) you want those changes merged down into master:
 

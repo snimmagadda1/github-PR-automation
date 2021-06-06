@@ -33,7 +33,7 @@ var (
 )
 
 func processEvent(p *ghwebhooks.PushPayload) {
-	isRelease := strings.Contains(strings.ToLower(p.Ref), strings.ToLower(releaseBranch))
+	isRelease := strings.Contains(strings.ToLower(releaseBranch), strings.ToLower(p.Ref))
 	if isRelease {
 		if repo := p.Repository.Name; utils.Contains(repos, repo) {
 
