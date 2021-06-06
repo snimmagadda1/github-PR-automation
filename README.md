@@ -1,6 +1,7 @@
 # Welcome to github-PR-bot 👋
 
 ![Version](https://img.shields.io/badge/version-0.0.1-blue.svg?cacheSeconds=2592000)
+[![Build Status](https://travis-ci.com/snimmagadda1/github-PR-automation.svg?branch=master)](https://travis-ci.com/snimmagadda1/github-PR-automation)
 [![Go Report](https://goreportcard.com/badge/github.com/snimmagadda1/stack-exchange-graphql-server)](https://goreportcard.com/report/github.com/snimmagadda1/github-PR-automation)
 
 > A bot to respond to github events to make life easier
