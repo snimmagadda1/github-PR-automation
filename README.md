@@ -59,7 +59,7 @@ The bot should start responding to events:
 
 
 ## Extending
-The bot is easily extensible! The "heavy lifting" occurs in the `Handle` function. Right now it only responds to `PushEvent`s. Processing different types of events from the Github API is as simple as adding a handler to the switch statement:
+The bot is extensible! The "heavy lifting" occurs in the `Handle` function. Right now it only responds to `PushEvent`s. Processing different types of events from the Github API is as simple as adding a handler to the switch statement:
 
 ```go
 func Handle(response http.ResponseWriter, request *http.Request) {
