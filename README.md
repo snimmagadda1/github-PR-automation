@@ -54,7 +54,7 @@ The bot should start responding to events:
 2021/06/06 12:46:39 Ready to handle github events
 2021/06/06 12:47:28 received push event
 2021/06/06 12:47:28 received unregistered GitHub event: event not defined to be parsed
-2021/06/06 12:47:29 created pull request: https://api.github.com/repos/snimmagadda1/test/pulls/5
+2021/06/06 12:47:29 created pull request: https://api.github.com/repos/XXX/test/pulls/5
 ```
 
 
