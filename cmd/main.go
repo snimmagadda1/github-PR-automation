@@ -35,11 +35,11 @@ var (
 func processReleaseEvent(p *ghwebhooks.PushPayload) {
 	isRelease := strings.Contains(strings.ToLower(p.Ref), strings.ToLower(releaseBranch))
 	if isRelease {
-		if branch := p.Repository.Name; utils.Contains(repos, branch) {
+		if repo := p.Repository.Name; utils.Contains(repos, repo) {
 
 			// Check out new branch of main
 			mergeBranch := "merge-" + releaseBranch
-			ref, err := s.GetRef(p.Installation.ID, branch, releaseBranch, mergeBranch)
+			ref, err := s.GetRef(p.Installation.ID, repo, releaseBranch, mergeBranch)
 			if err != nil {
 				log.Fatalf("Unable to get/create the commit reference: %s\n", err)
 			}
@@ -48,7 +48,7 @@ func processReleaseEvent(p *ghwebhooks.PushPayload) {
 			}
 
 			// Create PR on new branch
-			pr, _, err := s.GetV3Client(p.Installation.ID).PullRequests.Create(context.TODO(), owner, branch, &v3.NewPullRequest{
+			pr, _, err := s.GetV3Client(p.Installation.ID).PullRequests.Create(context.TODO(), owner, repo, &v3.NewPullRequest{
 				Title:               v3.String("Merge " + releaseBranch),
 				Head:                v3.String(strings.ToLower(mergeBranch)),
 				Base:                v3.String(masterBranch),
@@ -56,14 +56,12 @@ func processReleaseEvent(p *ghwebhooks.PushPayload) {
 				MaintainerCanModify: v3.Bool(true),
 			})
 			if err != nil {
-				if !strings.Contains(err.Error(), "A pull request already exists") {
-					log.Printf("error creating pull request: %v\n", err)
-				}
+				log.Printf("Unable to create pull request. Reason: %v\n", err)
 			} else {
 				log.Printf("created pull request: %s", pr.GetURL())
 			}
 		} else {
-			log.Printf("parsed push - unmonitored repo: %s", branch)
+			log.Printf("parsed push - unmonitored repo: %s", repo)
 		}
 	}
 }
