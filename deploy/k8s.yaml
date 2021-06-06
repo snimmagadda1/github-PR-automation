@@ -43,7 +43,10 @@ spec:
         ports:
         - containerPort: 3000
           protocol: TCP
-        volumeMonts:
+        volumeMounts:
+        - name: github-rsa-keypair
+          mountPath: /app/keys
+        volumes:
         - name: github-rsa-keypair
           secret:
             secretName: github-rsa-keypari
