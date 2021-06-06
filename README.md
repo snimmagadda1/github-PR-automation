@@ -47,6 +47,16 @@ To run the bot from source, create a `.env` file in the project root and set the
 go run cmd/main.go
 ```
 
+The bot should start responding to events:
+
+```log
+2021/06/06 12:46:39 Initialized environment with appId: 119220, owner: XXXX, certPath: /home/XXX/bot.pem, enterpriseUrl: , enterpriseUploadUrl: , releaseBranch: release1, repos: [test]
+2021/06/06 12:46:39 Ready to handle github events
+2021/06/06 12:47:28 received push event
+2021/06/06 12:47:28 received unregistered GitHub event: event not defined to be parsed
+2021/06/06 12:47:29 created pull request: https://api.github.com/repos/snimmagadda1/test/pulls/5
+```
+
 
 ## Extending
 The bot is easily extensible! The "heavy lifting" occurs in the `Handle` function. Right now it only responds to `PushEvent`s. Processing different types of events from the Github API is as simple as adding a handler to the switch statement:
