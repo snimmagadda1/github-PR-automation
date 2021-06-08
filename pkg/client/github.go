@@ -3,6 +3,7 @@ package client
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -57,7 +58,7 @@ func (s *GithubService) initService() error {
 		itr := ghinstallation.NewFromAppsTransport(atr, installationID)
 		itr.BaseURL = s.client.GitHubURL
 		s.itr = itr
-		log.Printf("successfully initialized enterprise GitHub app client url:%s, installation-id:%d expected-events:%v\n", itr.BaseURL, installationID, installation.Events)
+		log.Printf("successfully initialized enterprise GitHub app client url:%s, installation-id:%d expected-events:%v", itr.BaseURL, installationID, installation.Events)
 	}
 
 	return nil
@@ -93,13 +94,13 @@ func (s *GithubService) GetRef(installationID int, repo string, baseBranch strin
 
 	// If existing ref for merge branch, update the ref with latest changes and return
 	if ref, _, err = s.GetV3Client(installationID).Git.GetRef(context.TODO(), s.client.Owner, repo, "refs/heads/"+commitBranch); err == nil {
-		log.Printf("Found stale merge branch with ref %s with hash %s. UPDATING", ref.GetRef(), ref.GetObject().GetSHA())
+		log.Printf("Found stale merge branch ref %s with hash %s. UPDATING", ref.GetRef(), ref.GetObject().GetSHA())
 		newRef := &v3.Reference{Ref: v3.String("refs/heads/" + commitBranch), Object: &v3.GitObject{SHA: baseRef.Object.SHA}}
 		ref, res, err := s.GetV3Client(installationID).Git.UpdateRef(context.TODO(), s.client.Owner, repo, newRef, true)
 		if err != nil {
 			body, _ := ioutil.ReadAll(res.Body)
 			bodyString := string(body)
-			return nil, errors.New("Detected stale merge branch however an error occurred during update. Reason: " + bodyString)
+			return nil, fmt.Errorf("Detected stale merge branch however an error occurred during update. Reason: %s", bodyString)
 		}
 
 		log.Printf("Successfully updated existing merge branch. If a pull request already exists, creation may fail but updates should be reflected")
@@ -123,7 +124,7 @@ func (s *GithubService) GetRef(installationID int, repo string, baseBranch strin
 func (s *GithubService) AssignRevs(installationID int, repo string, pr *v3.PullRequest) (err error) {
 	comts, _, err := s.GetV3Client(installationID).PullRequests.ListCommits(context.TODO(), s.client.Owner, repo, *pr.Number, nil)
 	if err != nil {
-		return errors.New("Unable to list commits needed to obtain reviewers for PR: " + *pr.Title)
+		return fmt.Errorf("Unable to list commits needed to obtain reviewers for PR %d %s", *pr.Number, *pr.Title)
 	}
 
 	// Iterate arbitrary num previous committers
@@ -139,7 +140,7 @@ func (s *GithubService) AssignRevs(installationID int, repo string, pr *v3.PullR
 		Reviewers: auths,
 	})
 	if err != nil {
-		return errors.New("Unable to add reviewrs for PR: " + *pr.Title)
+		return fmt.Errorf("Unable to add reviewers for PR %d %s", *pr.Number, *pr.Title)
 	}
 
 	return nil
