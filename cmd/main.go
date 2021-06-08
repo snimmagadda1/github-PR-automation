@@ -64,9 +64,9 @@ func processEvent(p *ghwebhooks.PushPayload) {
 		err = s.AssignRevs(p.Installation.ID, repo, pr)
 		if err != nil {
 			log.Printf("Unable to add reviewers to PR: %d %s. Reason: %v", pr.Number, *pr.Title, err)
+		} else {
+			log.Printf("Successfully assigned reviewers to PR %d %s", pr.Number, *pr.Title)
 		}
-		log.Printf("Successfully assigned reviewers to PR %d %s", pr.Number, *pr.Title)
-
 	} else {
 		log.Printf("parsed push - unmonitored repo: %s", repo)
 	}
