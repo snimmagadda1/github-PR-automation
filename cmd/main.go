@@ -35,35 +35,38 @@ var (
 func processEvent(p *ghwebhooks.PushPayload) {
 	// TODO: More robust comparison logic here
 	isRelease := strings.Contains(strings.ToLower(p.Ref), strings.ToLower(releaseBranch)) && !strings.Contains(p.Ref, "merge")
-	if isRelease {
-		if repo := p.Repository.Name; utils.Contains(repos, repo) {
+	if !isRelease {
+		log.Printf("Push event on non-release branch: %s. Ignoring", p.Ref)
+		return
+	}
 
-			// Check out new branch of main
-			mergeBranch := "merge-" + releaseBranch
-			ref, err := s.GetRef(p.Installation.ID, repo, releaseBranch, mergeBranch)
-			if err != nil {
-				log.Fatalf("Unable to get/create the commit reference: %s\n", err)
-			}
-			if ref == nil {
-				log.Fatalf("No error where returned but the reference is nil")
-			}
+	if repo := p.Repository.Name; utils.Contains(repos, repo) {
 
-			// Create PR on new branch
-			pr, _, err := s.GetV3Client(p.Installation.ID).PullRequests.Create(context.TODO(), owner, repo, &v3.NewPullRequest{
-				Title:               v3.String("Merge " + releaseBranch),
-				Head:                v3.String(strings.ToLower(mergeBranch)),
-				Base:                v3.String(masterBranch),
-				Body:                v3.String("This is an automatically created PR 🚀"),
-				MaintainerCanModify: v3.Bool(true),
-			})
-			if err != nil {
-				log.Printf("Unable to create pull request. Reason: %v\n", err)
-			} else {
-				log.Printf("created pull request: %s", pr.GetURL())
-			}
-		} else {
-			log.Printf("parsed push - unmonitored repo: %s", repo)
+		// Check out new branch of main
+		mergeBranch := "merge-" + releaseBranch
+		ref, err := s.GetRef(p.Installation.ID, repo, releaseBranch, mergeBranch)
+		if err != nil {
+			log.Fatalf("Unable to get/create the commit reference: %s\n", err)
 		}
+		if ref == nil {
+			log.Fatalf("No error where returned but the reference is nil")
+		}
+
+		// Create PR on new branch
+		pr, _, err := s.GetV3Client(p.Installation.ID).PullRequests.Create(context.TODO(), owner, repo, &v3.NewPullRequest{
+			Title:               v3.String("Merge " + releaseBranch),
+			Head:                v3.String(strings.ToLower(mergeBranch)),
+			Base:                v3.String(masterBranch),
+			Body:                v3.String("This is an automatically created PR 🚀"),
+			MaintainerCanModify: v3.Bool(true),
+		})
+		if err != nil {
+			log.Printf("Unable to create pull request. Reason: %v", err)
+		} else {
+			log.Printf("created pull request: %s", pr.GetURL())
+		}
+	} else {
+		log.Printf("parsed push - unmonitored repo: %s", repo)
 	}
 }
 

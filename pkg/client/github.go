@@ -3,6 +3,7 @@ package client
 import (
 	"context"
 	"errors"
+	"io/ioutil"
 	"log"
 	"net/http"
 
@@ -84,8 +85,24 @@ func (s *GithubService) GetV3Client(installationID int) *v3.Client {
 // GetRef returns the commit branch reference object if it exists or creates it
 // from the base branch before returning it. From https://github.com/google/go-github/blob/master/example/commitpr/main.go
 func (s *GithubService) GetRef(installationID int, repo string, baseBranch string, commitBranch string) (ref *v3.Reference, err error) {
+
+	var baseRef *v3.Reference
+	if baseRef, _, err = s.GetV3Client(installationID).Git.GetRef(context.TODO(), s.client.Owner, repo, "refs/heads/"+baseBranch); err != nil {
+		return nil, err
+	}
+
+	// If find existing ref for merge branch, update the ref with latest changes and return
 	if ref, _, err = s.GetV3Client(installationID).Git.GetRef(context.TODO(), s.client.Owner, repo, "refs/heads/"+commitBranch); err == nil {
-		return ref, nil
+		log.Printf("Found stale merge branch with ref %s with hash %s. UPDATING", ref.GetRef(), ref.GetObject().GetSHA())
+		newRef := &v3.Reference{Ref: v3.String("refs/heads/" + commitBranch), Object: &v3.GitObject{SHA: baseRef.Object.SHA}}
+		ref, res, err := s.GetV3Client(installationID).Git.UpdateRef(context.TODO(), s.client.Owner, repo, newRef, true)
+		if err != nil {
+			body, _ := ioutil.ReadAll(res.Body)
+			bodyString := string(body)
+			return nil, errors.New("Detected stale merge branch however an error occurred during deletion. Reason: " + bodyString)
+		}
+		log.Printf("Successfully updated existing merge branch. If a pull request already exists, creation may fail but updates should be reflected")
+		return ref, err
 	}
 
 	// We consider that an error means the branch has not been found and needs to
@@ -98,10 +115,6 @@ func (s *GithubService) GetRef(installationID int, repo string, baseBranch strin
 		return nil, errors.New("The `-base-branch` should not be set to an empty string when the branch specified by `-commit-branch` does not exists")
 	}
 
-	var baseRef *v3.Reference
-	if baseRef, _, err = s.GetV3Client(installationID).Git.GetRef(context.TODO(), s.client.Owner, repo, "refs/heads/"+baseBranch); err != nil {
-		return nil, err
-	}
 	newRef := &v3.Reference{Ref: v3.String("refs/heads/" + commitBranch), Object: &v3.GitObject{SHA: baseRef.Object.SHA}}
 	ref, _, err = s.GetV3Client(installationID).Git.CreateRef(context.TODO(), s.client.Owner, repo, newRef)
 	return ref, err
