@@ -91,7 +91,7 @@ func (s *GithubService) GetRef(installationID int, repo string, baseBranch strin
 		return nil, err
 	}
 
-	// If find existing ref for merge branch, update the ref with latest changes and return
+	// If existing ref for merge branch, update the ref with latest changes and return
 	if ref, _, err = s.GetV3Client(installationID).Git.GetRef(context.TODO(), s.client.Owner, repo, "refs/heads/"+commitBranch); err == nil {
 		log.Printf("Found stale merge branch with ref %s with hash %s. UPDATING", ref.GetRef(), ref.GetObject().GetSHA())
 		newRef := &v3.Reference{Ref: v3.String("refs/heads/" + commitBranch), Object: &v3.GitObject{SHA: baseRef.Object.SHA}}
@@ -99,15 +99,13 @@ func (s *GithubService) GetRef(installationID int, repo string, baseBranch strin
 		if err != nil {
 			body, _ := ioutil.ReadAll(res.Body)
 			bodyString := string(body)
-			return nil, errors.New("Detected stale merge branch however an error occurred during deletion. Reason: " + bodyString)
+			return nil, errors.New("Detected stale merge branch however an error occurred during update. Reason: " + bodyString)
 		}
 
 		log.Printf("Successfully updated existing merge branch. If a pull request already exists, creation may fail but updates should be reflected")
-		return ref, err
+		return ref, nil
 	}
 
-	// We consider that an error means the branch has not been found and needs to
-	// be created.
 	if commitBranch == baseBranch {
 		return nil, errors.New("The commit branch does not exist but `-base-branch` is the same as `-commit-branch`")
 	}
@@ -119,4 +117,30 @@ func (s *GithubService) GetRef(installationID int, repo string, baseBranch strin
 	newRef := &v3.Reference{Ref: v3.String("refs/heads/" + commitBranch), Object: &v3.GitObject{SHA: baseRef.Object.SHA}}
 	ref, _, err = s.GetV3Client(installationID).Git.CreateRef(context.TODO(), s.client.Owner, repo, newRef)
 	return ref, err
+}
+
+// AssignRevs assigns reviewers by iterating over recent commits and adding authors
+func (s *GithubService) AssignRevs(installationID int, repo string, pr *v3.PullRequest) (err error) {
+	comts, _, err := s.GetV3Client(installationID).PullRequests.ListCommits(context.TODO(), s.client.Owner, repo, *pr.Number, nil)
+	if err != nil {
+		return errors.New("Unable to list commits needed to obtain reviewers for PR: " + *pr.Title)
+	}
+
+	// Iterate arbitrary num previous committers
+	auths := make([]string, 6)
+	var count int = 0
+	for _, comt := range comts {
+		auths = append(auths, *comt.Committer.Login)
+		count++
+	}
+
+	// Add reviewers
+	_, _, err = s.GetV3Client(installationID).PullRequests.RequestReviewers(context.TODO(), s.client.Owner, repo, *pr.Number, v3.ReviewersRequest{
+		Reviewers: auths,
+	})
+	if err != nil {
+		return errors.New("Unable to add reviewrs for PR: " + *pr.Title)
+	}
+
+	return nil
 }
