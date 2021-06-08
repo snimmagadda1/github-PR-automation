@@ -97,7 +97,7 @@ func Handle(response http.ResponseWriter, request *http.Request) {
 		if !isRelease {
 			break
 		}
-		log.Println("received push event to release branch on repo %s", payload.Ref)
+		log.Printf("received push event to release branch on repo %s", payload.Ref)
 		// handle async b/c github wants speedy replies
 		go processEvent(&payload)
 	default:
