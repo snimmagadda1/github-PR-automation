@@ -33,13 +33,6 @@ var (
 )
 
 func processEvent(p *ghwebhooks.PushPayload) {
-	// TODO: More robust comparison logic here
-	isRelease := strings.Contains(strings.ToLower(p.Ref), strings.ToLower(releaseBranch)) && !strings.Contains(p.Ref, "merge")
-	if !isRelease {
-		log.Printf("Push event on non-release branch: %s. Ignoring", p.Ref)
-		return
-	}
-
 	if repo := p.Repository.Name; utils.Contains(repos, repo) {
 		// Check out new branch of main
 		mergeBranch := "merge-" + releaseBranch
@@ -62,6 +55,7 @@ func processEvent(p *ghwebhooks.PushPayload) {
 		})
 		if err != nil {
 			log.Printf("Unable to create pull request. Reason: %v", err)
+			return
 		} else {
 			log.Printf("created pull request: %s", pr.GetURL())
 		}
@@ -98,7 +92,12 @@ func Handle(response http.ResponseWriter, request *http.Request) {
 
 	switch payload := payload.(type) {
 	case ghwebhooks.PushPayload:
-		log.Println("received push event")
+		// TODO: More robust comparison logic here
+		isRelease := strings.Contains(strings.ToLower(payload.Ref), strings.ToLower(releaseBranch)) && !strings.Contains(payload.Ref, "merge")
+		if !isRelease {
+			break
+		}
+		log.Println("received push event to release branch on repo %s", payload.Ref)
 		// handle async b/c github wants speedy replies
 		go processEvent(&payload)
 	default:
