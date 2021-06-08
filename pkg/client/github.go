@@ -101,6 +101,7 @@ func (s *GithubService) GetRef(installationID int, repo string, baseBranch strin
 			bodyString := string(body)
 			return nil, errors.New("Detected stale merge branch however an error occurred during deletion. Reason: " + bodyString)
 		}
+
 		log.Printf("Successfully updated existing merge branch. If a pull request already exists, creation may fail but updates should be reflected")
 		return ref, err
 	}

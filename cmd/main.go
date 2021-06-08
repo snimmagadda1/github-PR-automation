@@ -47,6 +47,7 @@ func processEvent(p *ghwebhooks.PushPayload) {
 		if err != nil {
 			log.Fatalf("Unable to get/create the commit reference: %s\n", err)
 		}
+
 		if ref == nil {
 			log.Fatalf("No error where returned but the reference is nil")
 		}
