@@ -11,7 +11,7 @@ Built with Github Apps & Golang, the bot monitors an entire organization or list
 <img src="nvie_git_flow.png" alt="NVIE git flow strategy" width="400"/>
 
 
-This bot an alternative to Github Actions. Whereas actions need to be configured at the repository level, this bot can be configured at the organization level. Note: this comes with some hosting tradeoffs.
+This bot is an alternative to Github Actions. Whereas actions need to be configured at the repository level, this bot can be configured at the organization level. Note: this comes with some hosting tradeoffs.
 
 ## Usage
 A Github app must be registered before running. In the Github UI, set the webhook secret to `development`. Set the webhook URL After deploying/running with one of options below. Under developer settings, ensure the app has sufficient R/W repository permissions to create PRs and is subscribed to the following events:
@@ -29,6 +29,8 @@ Some environment variables must be set to deploy/run locally:
 | `MASTER_BRANCH` | String | master branch name to merge down to       | main         |
 | `RELEASE_BRANCH` | String | release branch name to monitor       | release-1.0.1         |
 | `REPOS` | String | Comma separated list of repos to watch       | api1-repo, api2-repo, ui1-repo, ui2-rpo         |
+| `OWNER` | String | Organization name or user (owner) name of repos       | snimmagadda1        |
+
 
 
 
