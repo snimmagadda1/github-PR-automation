@@ -41,7 +41,6 @@ func processEvent(p *ghwebhooks.PushPayload) {
 	}
 
 	if repo := p.Repository.Name; utils.Contains(repos, repo) {
-
 		// Check out new branch of main
 		mergeBranch := "merge-" + releaseBranch
 		ref, err := s.GetRef(p.Installation.ID, repo, releaseBranch, mergeBranch)
