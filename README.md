@@ -6,6 +6,8 @@
 
 > A minimal, performant bot responding to github events to make life easier
 
+### 🏠 [Description](https://s11a.com/creating-a-github-bot-with-go)
+
 Built with Github Apps & Golang, the bot monitors an entire organization or list of repositories to keep branches in-sync automatically. This is especially useful when handling multiple repositories with individual release branches (i.e microservices). When changes are pushed to release branches (i.e bug/hotfixes) you want those changes merged down into master:
 
 <img src="nvie_git_flow.png" alt="NVIE git flow strategy" width="400"/>
